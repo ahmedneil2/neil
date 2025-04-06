@@ -330,19 +330,22 @@ async def list_database_files(bot, message):
         # ফাইলের বিস্তারিত তথ্য
         out += "📁 সর্বশেষ 10টি ফাইলের তালিকা:\n\n"
         
-        async for file in col.find().sort('_id', -1).limit(10):
+        # pymongo কার্সর থেকে ফাইল পাওয়া
+        recent_files = list(col.find().sort('_id', -1).limit(10))
+        
+        for file in recent_files:
             file_name = file.get('file_name', 'অজানা')
             file_size = file.get('file_size', 0)
-            size_mb = round(file_size/1024/1024, 2)
+            size_mb = round(file_size/1024/1024, 2) if file_size else 0
             out += f"📄 {file_name} ({size_mb} MB)\n"
         
-        try:
-            await rju.edit_text(out)
-        except MessageTooLong:
+        if len(out) > 4096:
             with open('database_files.txt', 'w+', encoding='utf-8') as outfile:
                 outfile.write(out)
             await message.reply_document('database_files.txt', caption="ডাটাবেসের সম্পূর্ণ তালিকা")
             os.remove('database_files.txt')
+        else:
+            await rju.edit_text(out)
             
     except Exception as e:
         await rju.edit_text(f"একটি ত্রুটি ঘটেছে: {str(e)}")
