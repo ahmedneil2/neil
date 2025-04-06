@@ -312,3 +312,37 @@ async def stream_file(bot, message):
         await message.reply(f"Streaming {file_name} ({get_size(file_size)})\n\nURL: {stream_url}")
     except Exception as e:
         await message.reply(f"Error: {e}")
+
+@Client.on_message(filters.command('dblist') & filters.user(ADMINS))
+async def list_database_files(bot, message):
+    rju = await message.reply('ডাটাবেস থেকে তথ্য সংগ্রহ করা হচ্ছে...')
+    
+    try:
+        # প্রথম ডাটাবেস থেকে ফাইল গণনা
+        files_count = col.count_documents({})
+        sec_files_count = sec_col.count_documents({})
+        
+        out = f"📊 ডাটাবেসের বিস্তারিত তথ্য:\n\n"
+        out += f"প্রথম ডাটাবেসে মোট ফাইল: {files_count}\n"
+        out += f"দ্বিতীয় ডাটাবেসে মোট ফাইল: {sec_files_count}\n"
+        out += f"সর্বমোট ফাইল: {files_count + sec_files_count}\n\n"
+        
+        # ফাইলের বিস্তারিত তথ্য
+        out += "📁 সর্বশেষ 10টি ফাইলের তালিকা:\n\n"
+        
+        async for file in col.find().sort('_id', -1).limit(10):
+            file_name = file.get('file_name', 'অজানা')
+            file_size = file.get('file_size', 0)
+            size_mb = round(file_size/1024/1024, 2)
+            out += f"📄 {file_name} ({size_mb} MB)\n"
+        
+        try:
+            await rju.edit_text(out)
+        except MessageTooLong:
+            with open('database_files.txt', 'w+', encoding='utf-8') as outfile:
+                outfile.write(out)
+            await message.reply_document('database_files.txt', caption="ডাটাবেসের সম্পূর্ণ তালিকা")
+            os.remove('database_files.txt')
+            
+    except Exception as e:
+        await rju.edit_text(f"একটি ত্রুটি ঘটেছে: {str(e)}")
