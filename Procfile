@@ -2,5 +2,5 @@
 # Subscribe YouTube Channel For Amazing Bot @Tech_VJ
 # Ask Doubt on telegram @KingVJ01
 
-web: python3 bot.py
-worker: python3 bot.py
+web: python3 main.py
+worker: python3 main.py
