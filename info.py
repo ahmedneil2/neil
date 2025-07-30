@@ -198,7 +198,7 @@ else:
     ON_HEROKU = False
 # Multiple streaming URLs through Cloudflare
 STREAM_URLS = [
-    "https://odd-darkness-074fsadsafsafasfjlknmmlkaytr9pe8afnhdklnfalskdftgy.bdmovieshub.workers.dev/",
+    "https://royal-wave-71bc.servers8.workers.dev/",
     "https://your-cloudflare-domain-2.workers.dev/"
 ]
 # Default URL if no specific one is chosen
