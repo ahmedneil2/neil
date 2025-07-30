@@ -66,6 +66,7 @@ class Database:
         self.grp = self.db.groups
         self.users = self.db.uersz
         self.bot = self.db.clone_bots
+        self.files = self.db.file_mappings  # Collection for file ID mappings
 
 
     def new_user(self, id, name):
@@ -337,7 +338,109 @@ class Database:
 
     async def get_save(self, id):
         user = await self.col.find_one({'id': int(id)})
-        return user.get('save', False) 
-    
+        return user.get('save', False)
+
+    # Stream Access Control Functions
+    async def add_stream_user(self, user_id):
+        """Add user to stream access list"""
+        await self.users.update_one(
+            {"id": user_id},
+            {"$set": {"stream_access": True}},
+            upsert=True
+        )
+        return True
+
+    async def remove_stream_user(self, user_id):
+        """Remove user from stream access list"""
+        await self.users.update_one(
+            {"id": user_id},
+            {"$set": {"stream_access": False}}
+        )
+        return True
+
+    async def has_stream_access(self, user_id):
+        """Check if user has stream access"""
+        from info import STREAM_ACCESS_CONTROL, STREAM_ACCESS_USERS, ADMINS
+
+        # If stream access control is disabled, everyone has access
+        if not STREAM_ACCESS_CONTROL:
+            return True
+
+        # Admins always have stream access
+        if user_id in ADMINS:
+            return True
+
+        # Check if user is in predefined stream access list
+        if user_id in STREAM_ACCESS_USERS:
+            return True
+
+        # Check database for stream access
+        user_data = await self.get_user(user_id)
+        if user_data:
+            return user_data.get("stream_access", False)
+        return False
+
+    async def get_all_stream_users(self):
+        """Get all users with stream access"""
+        cursor = self.users.find({"stream_access": True})
+        users = []
+        async for user in cursor:
+            users.append(user["id"])
+        return users
+
+    async def get_stream_users_count(self):
+        """Get count of users with stream access"""
+        count = await self.users.count_documents({"stream_access": True})
+        return count
+
+    # File ID Mapping Functions for Persistent Streaming
+    async def add_file_mapping(self, file_id, message_id, file_name, file_size, mime_type):
+        """Add file ID to message ID mapping for persistent streaming"""
+        await self.files.update_one(
+            {"file_id": file_id},
+            {
+                "$set": {
+                    "file_id": file_id,
+                    "message_id": message_id,
+                    "file_name": file_name,
+                    "file_size": file_size,
+                    "mime_type": mime_type,
+                    "created_at": datetime.datetime.now()
+                }
+            },
+            upsert=True
+        )
+        return True
+
+    async def get_file_mapping(self, file_id):
+        """Get message ID from file ID"""
+        file_data = await self.files.find_one({"file_id": file_id})
+        return file_data
+
+    async def update_file_mapping(self, file_id, new_message_id):
+        """Update message ID for existing file ID"""
+        await self.files.update_one(
+            {"file_id": file_id},
+            {
+                "$set": {
+                    "message_id": new_message_id,
+                    "updated_at": datetime.datetime.now()
+                }
+            }
+        )
+        return True
+
+    async def delete_file_mapping(self, file_id):
+        """Delete file mapping"""
+        await self.files.delete_one({"file_id": file_id})
+        return True
+
+    async def get_all_file_mappings(self):
+        """Get all file mappings"""
+        cursor = self.files.find({"file_id": {"$exists": True}})
+        files = []
+        async for file_data in cursor:
+            files.append(file_data)
+        return files
 
 db = Database(USER_DB_URI, DATABASE_NAME)
