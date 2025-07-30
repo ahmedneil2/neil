@@ -1824,60 +1824,23 @@ Benefits of Premium:
 
     elif query.data.startswith("generate_stream_link"):
         _, file_id = query.data.split(":")
-        user_id = query.from_user.id
-
-        # Check if user has stream access
-        has_stream = await db.has_stream_access(user_id)
-
         try:
             log_msg = await client.send_cached_media(chat_id=LOG_CHANNEL, file_id=file_id)
-            fileName = quote_plus(get_name(log_msg))
-
-            # Store file mapping for persistent links
-            file_info = getattr(log_msg, log_msg.media.value)
-            await db.add_file_mapping(
-                file_id=file_info.file_id,
-                message_id=log_msg.id,
-                file_name=get_name(log_msg),
-                file_size=file_info.file_size,
-                mime_type=getattr(file_info, 'mime_type', None)
-            )
-
-            # Create both types of links
-            # Traditional message ID based links (may break if file is re-uploaded)
-            old_stream = f"{URL}watch/{str(log_msg.id)}/{fileName}?hash={get_hash(log_msg)}"
-            old_download = f"{URL}{str(log_msg.id)}/{fileName}?hash={get_hash(log_msg)}"
-
-            # New file ID based persistent links (won't break if file is re-uploaded)
-            stream = f"{URL}watch/f_{file_info.file_id}/{fileName}?hash={get_hash(log_msg)}"
-            download = f"{URL}f_{file_info.file_id}/{fileName}?hash={get_hash(log_msg)}"
-
-            if has_stream:
-                # User has stream access - show both download and stream buttons
-                button = [[
-                    InlineKeyboardButton("• ᴅᴏᴡɴʟᴏᴀᴅ •", url=download),
-                    InlineKeyboardButton('• ᴡᴀᴛᴄʜ •', url=stream)
-                ],[
-                    InlineKeyboardButton("• ᴡᴀᴛᴄʜ ɪɴ ᴡᴇʙ ᴀᴘᴘ •", web_app=WebAppInfo(url=stream))
-                ]]
-            else:
-                # User doesn't have stream access - show only download button
-                button = [[
-                    InlineKeyboardButton("• ᴅᴏᴡɴʟᴏᴀᴅ •", url=download)
-                ],[
-                    InlineKeyboardButton("🚫 স্ট্রিম অ্যাক্সেস নেই", callback_data="stream_access_denied")
-                ]]
-
+            fileName = {quote_plus(get_name(log_msg))}
+            stream = f"{URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+            download = f"{URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+            button = [[
+                InlineKeyboardButton("• ᴅᴏᴡɴʟᴏᴀᴅ •", url=download),
+                InlineKeyboardButton('• ᴡᴀᴛᴄʜ •', url=stream)
+            ],[
+                InlineKeyboardButton("• ᴡᴀᴛᴄʜ ɪɴ ᴡᴇʙ ᴀᴘᴘ •", web_app=WebAppInfo(url=stream))
+            ]]
             await query.message.edit_reply_markup(InlineKeyboardMarkup(button))
         except Exception as e:
             print(e)
             await query.answer(f"something went wrong\n\n{e}", show_alert=True)
             return
-
-    elif query.data == "stream_access_denied":
-        from info import STREAM_ACCESS_MESSAGE
-        await query.answer(text=STREAM_ACCESS_MESSAGE, show_alert=True)
-
+    
     elif query.data == "reqinfo":
         await query.answer(text=script.REQINFO, show_alert=True)
 
