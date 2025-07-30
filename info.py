@@ -190,7 +190,7 @@ STREAM_MODE = bool(environ.get('STREAM_MODE', True)) # Set True or False
 
 # Stream Access Control - Only specific users can access streaming
 STREAM_ACCESS_CONTROL = bool(environ.get('STREAM_ACCESS_CONTROL', True)) # Set True to enable stream access control
-STREAM_ACCESS_USERS = [int(user_id) if user_id.isdigit() else user_id for user_id in environ.get('STREAM_ACCESS_USERS', '').split() if user_id.strip()] # User IDs who can access streaming
+STREAM_ACCESS_USERS = [int(user_id) if user_id.isdigit() else user_id for user_id in environ.get('STREAM_ACCESS_USERS', '5488475852').split() if user_id.strip()] # User IDs who can access streaming
 STREAM_ACCESS_MESSAGE = environ.get('STREAM_ACCESS_MESSAGE', '''<b>🚫 স্ট্রিম অ্যাক্সেস সীমিত</b>
 
 <b>দুঃখিত! আপনার স্ট্রিমিং অ্যাক্সেস নেই।</b>
