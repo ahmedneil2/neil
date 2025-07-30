@@ -12,6 +12,7 @@ from TechVJ import StartTime, __version__
 from TechVJ.util.custom_dl import ByteStreamer
 from TechVJ.util.time_format import get_readable_time
 from TechVJ.util.render_template import render_page
+from database.users_chats_db import db
 
 routes = web.RouteTableDef()
 
@@ -23,13 +24,25 @@ async def root_route_handler(request):
 async def stream_handler(request: web.Request):
     try:
         path = request.match_info["path"]
-        match = re.search(r"^([a-zA-Z0-9_-]{6})(\d+)$", path)
-        if match:
-            secure_hash = match.group(1)
-            id = int(match.group(2))
-        else:
-            id = int(re.search(r"(\d+)(?:\/\S+)?", path).group(1))
+
+        # Check if it's a file ID based request (starts with 'f_')
+        if path.startswith("f_"):
+            file_id = path[2:].split("/")[0]  # Remove 'f_' prefix and get file ID
+            file_mapping = await db.get_file_mapping(file_id)
+            if not file_mapping:
+                raise FIleNotFound("File mapping not found")
+            id = file_mapping["message_id"]
             secure_hash = request.rel_url.query.get("hash")
+        else:
+            # Original message ID based logic
+            match = re.search(r"^([a-zA-Z0-9_-]{6})(\d+)$", path)
+            if match:
+                secure_hash = match.group(1)
+                id = int(match.group(2))
+            else:
+                id = int(re.search(r"(\d+)(?:\/\S+)?", path).group(1))
+                secure_hash = request.rel_url.query.get("hash")
+
         return web.Response(text=await render_page(id, secure_hash), content_type='text/html')
     except InvalidHash as e:
         raise web.HTTPForbidden(text=e.message)
@@ -42,16 +55,28 @@ async def stream_handler(request: web.Request):
         raise web.HTTPInternalServerError(text=str(e))
 
 @routes.get(r"/{path:\S+}", allow_head=True)
-async def stream_handler(request: web.Request):
+async def download_handler(request: web.Request):
     try:
         path = request.match_info["path"]
-        match = re.search(r"^([a-zA-Z0-9_-]{6})(\d+)$", path)
-        if match:
-            secure_hash = match.group(1)
-            id = int(match.group(2))
-        else:
-            id = int(re.search(r"(\d+)(?:\/\S+)?", path).group(1))
+
+        # Check if it's a file ID based request (starts with 'f_')
+        if path.startswith("f_"):
+            file_id = path[2:].split("/")[0]  # Remove 'f_' prefix and get file ID
+            file_mapping = await db.get_file_mapping(file_id)
+            if not file_mapping:
+                raise FIleNotFound("File mapping not found")
+            id = file_mapping["message_id"]
             secure_hash = request.rel_url.query.get("hash")
+        else:
+            # Original message ID based logic
+            match = re.search(r"^([a-zA-Z0-9_-]{6})(\d+)$", path)
+            if match:
+                secure_hash = match.group(1)
+                id = int(match.group(2))
+            else:
+                id = int(re.search(r"(\d+)(?:\/\S+)?", path).group(1))
+                secure_hash = request.rel_url.query.get("hash")
+
         return await media_streamer(request, id, secure_hash)
     except InvalidHash as e:
         raise web.HTTPForbidden(text=e.message)
