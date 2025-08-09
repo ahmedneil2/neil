@@ -209,7 +209,7 @@ else:
     ON_HEROKU = False
 # Multiple streaming URLs through Cloudflare
 STREAM_URLS = [
-    "https://royal-wave-71bc.servers8.workers.dev/",
+    "https://100files-drive-curly-bush-ec24.cinepixserver00.workers.dev/",
     "https://your-cloudflare-domain-2.workers.dev/"
 ]
 # Default URL if no specific one is chosen
@@ -256,4 +256,5 @@ REQUEST_FORMAT = """
 BROADCAST_ENABLED = bool(environ.get('BROADCAST_ENABLED', True))
 REQUIRE_BROADCAST_CODE = bool(environ.get('REQUIRE_BROADCAST_CODE', True))
 BROADCAST_CODE = environ.get('BROADCAST_CODE', "bC9#mK2$pQ5")  # Replace with your secret code
+
 
